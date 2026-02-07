@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MARCH 20 PROTOCOL | MASTER</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#000000',
+                        card: '#111111',
+                        neon: '#39ff14',
+                        crimson: '#DC143C',
+                        warning: '#FFD700',
+                        subtle: '#333333'
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #000000; color: #e5e5e5; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        .glow-text { text-shadow: 0 0 10px rgba(57, 255, 20, 0.5); }
+        .scanline {
+            width: 100%; height: 100px; z-index: 50;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(57, 255, 20, 0.02) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1; position: absolute; bottom: 100%;
+            animation: scanline 10s linear infinite; pointer-events: none;
+        }
+        @keyframes scanline { 0% { bottom: 100%; } 100% { bottom: -100%; } }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .custom-checkbox input:checked + div { background-color: #39ff14; border-color: #39ff14; }
+        .custom-checkbox input:checked + div svg { display: block; }
+    </style>
+</head>
+<body class="font-mono text-sm h-screen overflow-hidden select-none">
+    <div id="root" class="h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- ICONS ---
+        const Icon = ({ name }) => {
+            if(name === 'home') return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+            if(name === 'fuel') return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>;
+            if(name === 'train') return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>;
+            if(name === 'log') return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+            if(name === 'data') return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>;
+            if(name === 'check') return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>;
+            if(name === 'alert') return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+            if(name === 'info') return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
+            if(name === 'trash') return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
+            return null;
+        };
+
+        // --- UTILS ---
+        const getTodayDate = () => {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const STORAGE_KEY = 'march20_master_v1';
+
+        // --- COMPONENTS ---
+        const Card = ({ children, title, color = "border-subtle", className = "" }) => (
+            <div className={`bg-card border ${color} p-4 rounded-sm shadow-lg mb-4 ${className}`}>
+                {title && <h3 className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-3 border-b border-gray-800 pb-2 flex justify-between items-center">{title}</h3>}
+                {children}
+            </div>
+        );
+
+        const ProgressBar = ({ value, max, color = "bg-neon" }) => {
+            const width = Math.min(100, Math.max(0, (value / max) * 100));
+            return (
+                <div className="w-full bg-gray-800 h-1.5 rounded-sm mt-2 overflow-hidden">
+                    <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${width}%` }}></div>
+                </div>
+            );
+        };
+
+        // --- SUB-SECTIONS ---
+
+        const Dashboard = ({ state, today, daysRemaining, dayNumber, setActiveTab }) => {
+            const isSaturday = new Date().getDay() === 6;
+
+            return (
+                <div className="fade-in space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Card color="border-neon/30" className="text-center py-6">
+                            <span className="text-gray-500 text-[10px]">DEADLINE</span>
+                            <div className="text-4xl font-bold text-white glow-text my-1">{daysRemaining}</div>
+                            <span className="text-neon text-[10px]">DAYS LEFT</span>
+                        </Card>
+                        <Card color="border-gray-700" className="text-center py-6">
+                            <span className="text-gray-500 text-[10px]">PROTOCOL DAY</span>
+                            <div className="text-4xl font-bold text-white my-1">{dayNumber > 0 ? dayNumber : 1}<span className="text-gray-600 text-sm">/41</span></div>
+                            <span className="text-gray-400 text-[10px]">STATUS: ACTIVE</span>
+                        </Card>
+                    </div>
+
+                    {isSaturday && (
+                        <div className="bg-crimson/20 border border-crimson p-4 rounded-sm flex items-center justify-between animate-pulse">
+                            <div className="flex items-center gap-2">
+                                <Icon name="alert" />
+                                <span className="font-bold text-crimson text-xs">MEASUREMENT DAY</span>
+                            </div>
+                            <button onClick={() => setActiveTab('data')} className="text-[10px] bg-crimson text-black px-3 py-1 font-bold rounded-sm hover:bg-white hover:text-black transition">
+                                RECORD NOW
+                            </button>
+                        </div>
+                    )}
+
+                    <Card title="Daily Fuel Status">
+                        <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span className="text-gray-400">CALORIES ({state.calories})</span>
+                                    <span className={state.calories > 2100 ? "text-crimson" : "text-neon"}>Target: 1700-1900</span>
+                                </div>
+                                <ProgressBar value={state.calories} max={2500} color={state.calories > 2100 ? "bg-crimson" : "bg-neon"} />
+                            </div>
+                            <div>
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span className="text-gray-400">PROTEIN ({state.protein}g)</span>
+                                    <span className={state.protein < 90 ? "text-crimson" : "text-neon"}>Target: &gt;95g</span>
+                                </div>
+                                <ProgressBar value={state.protein} max={150} color={state.protein < 90 ? "bg-crimson" : "bg-neon"} />
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            );
+        };
+
+        const FuelSection = ({ state, updateState }) => {
+            let statusCard;
+            if (state.calories < 1500) {
+                statusCard = <div className="bg-crimson/20 border border-crimson p-3 rounded-sm mb-4"><h4 className="font-bold text-crimson text-xs flex items-center gap-2"><Icon name="alert"/> STARVATION MODE DETECTED</h4><p className="text-[10px] text-gray-300 mt-1">Metabolism will slow down. EAT MORE.</p></div>;
+            } else if (state.calories > 2100) {
+                statusCard = <div className="bg-warning/20 border border-warning p-3 rounded-sm mb-4"><h4 className="font-bold text-warning text-xs flex items-center gap-2"><Icon name="alert"/> CALORIE SURPLUS WARNING</h4><p className="text-[10px] text-gray-300 mt-1">High risk of fat gain. Reduce intake.</p></div>;
+            } else if (state.calories >= 1700 && state.calories <= 1900 && state.protein > 95) {
+                statusCard = <div className="bg-neon/20 border border-neon p-3 rounded-sm mb-4"><h4 className="font-bold text-neon text-xs flex items-center gap-2">✅ PERFECT RECOMP ZONE</h4><p className="text-[10px] text-gray-300 mt-1">Optimal growth environment active.</p></div>;
+            } else if (state.protein < 90) {
+                statusCard = <div className="bg-crimson/10 border border-crimson p-3 rounded-sm mb-4"><h4 className="font-bold text-crimson text-xs flex items-center gap-2">❌ LOW PROTEIN</h4><p className="text-[10px] text-gray-300 mt-1">Muscle atrophy risk.</p></div>;
+            } else {
+                statusCard = <div className="bg-gray-800 border border-gray-600 p-3 rounded-sm mb-4"><h4 className="font-bold text-gray-300 text-xs">STATUS: ACCEPTABLE</h4><p className="text-[10px] text-gray-400 mt-1">Within limits, but aim for optimization.</p></div>;
+            }
+
+            const bmr = 1600;
+            const activityBurn = state.steps * 0.045;
+            const tdee = bmr + activityBurn;
+            const balance = state.calories - tdee;
+            const weightChange = balance / 7700;
+            const predictedWeight = (state.weight + weightChange).toFixed(2);
+
+            return (
+                <div className="fade-in space-y-4">
+                    {statusCard}
+                    <Card title="Input Daily Macros">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] text-gray-500 mb-1 uppercase">Calories</label>
+                                <input type="number" value={state.calories} onChange={(e) => updateState('calories', Number(e.target.value))} className="w-full bg-black border border-gray-700 p-2 text-white focus:border-neon outline-none text-xl font-bold rounded-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] text-gray-500 mb-1 uppercase">Protein (g)</label>
+                                <input type="number" value={state.protein} onChange={(e) => updateState('protein', Number(e.target.value))} className="w-full bg-black border border-gray-700 p-2 text-white focus:border-neon outline-none text-xl font-bold rounded-sm" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-[10px] text-gray-500 mb-1 uppercase">Steps Taken</label>
+                                <input type="number" value={state.steps} onChange={(e) => updateState('steps', Number(e.target.value))} className="w-full bg-black border border-gray-700 p-2 text-white focus:border-neon outline-none text-xl font-bold rounded-sm" />
+                            </div>
+                        </div>
+                    </Card>
+                    <Card title="Analytics Engine" color="border-gray-800">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <div className="text-[10px] text-gray-500 uppercase">Est. TDEE</div>
+                                <div className="text-xl font-bold text-white">{Math.round(tdee)} kcal</div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-[10px] text-gray-500 uppercase">Tomorrow's Weight</div>
+                                <div className={`text-xl font-bold ${weightChange > 0 ? 'text-warning' : 'text-neon'}`}>{predictedWeight} kg</div>
+                                <div className="text-[10px] text-gray-600">({weightChange > 0 ? '+' : ''}{(weightChange * 1000).toFixed(0)}g change)</div>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            );
+        };
+
+        const WorkoutSection = ({ state, updateState, today }) => {
+            const dayIndex = new Date().getDay(); 
+            const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const dayName = days[dayIndex];
+            
+            let workoutName = "Active Rest";
+            let exercises = [ 
+                { name: "12k Steps Walk", sets: "1", reps: "60 mins", notes: "Low intensity steady state." }, 
+                { name: "Neck Curls (Optional)", sets: "3", reps: "15-20", notes: "Slow controlled reps." } 
+            ];
+
+            if (dayName === "Mon" || dayName === "Thu") {
+                workoutName = "Shoulder & Back Focus";
+                exercises = [ 
+                    { name: "Seated Shoulder Press", sets: "3", reps: "12, 10, 8-10", weight: "7.5kg", notes: "Elbows slightly forward. Do not lock out." }, 
+                    { name: "Dumbbell Rows", sets: "4", reps: "15, 12, 12, 20*", weight: "10kg", notes: "Pull to hip. Last set: Drop to 7.5kg & do 20 reps." }, 
+                    { name: "Lateral Raises", sets: "4", reps: "15, 15, 12, 15", weight: "5kg", notes: "Pour water motion. Set 3: 7.5kg partials." }, 
+                    { name: "Dumbbell Shrugs", sets: "3", reps: "20, 20, 20", weight: "10kg", notes: "Hold at top for 2 seconds." },
+                    { name: "Lying Neck Curls", sets: "3", reps: "25, 20, 15", weight: "BW", notes: "Chin to chest. Fight the burn." }
+                ];
+            } else if (dayName === "Tue" || dayName === "Fri") {
+                workoutName = "Lower Body & Abs";
+                exercises = [ 
+                    { name: "Goblet Squats", sets: "3", reps: "10-12", weight: "10kg", notes: "Deep stretch." }, 
+                    { name: "Lunges", sets: "3", reps: "10/leg", weight: "BW/5kg", notes: "Keep torso upright." }, 
+                    { name: "Hanging Leg Raises", sets: "3", reps: "10-15", weight: "-", notes: "Control the swing." }, 
+                    { name: "Plank", sets: "3", reps: "1 min", weight: "-", notes: "Core tight." } 
+                ];
+            }
+
+            // Get progress for today, defaulting to empty object if undefined
+            const currentProgress = state.sessionProgress[today] || {};
+            const isCompleted = state.workoutHistory[today];
+
+            const toggleExercise = (idx) => {
+                const newProgress = { ...currentProgress, [idx]: !currentProgress[idx] };
+                // Update specific date in sessionProgress map
+                const updatedSessionProgress = { ...state.sessionProgress, [today]: newProgress };
+                updateState('sessionProgress', updatedSessionProgress);
+            };
+
+            const toggleFinish = () => {
+                const updatedHistory = { ...state.workoutHistory, [today]: !isCompleted };
+                updateState('workoutHistory', updatedHistory);
+            };
+
+            return (
+                <div className="space-y-3 fade-in pb-20">
+                    <div className="flex justify-between items-end mb-2 border-b border-gray-800 pb-2">
+                        <h2 className="text-xl font-bold text-white uppercase">{dayName} // {workoutName}</h2>
+                    </div>
+
+                    {exercises.map((ex, idx) => {
+                        const isChecked = currentProgress[idx] || false;
+                        return (
+                            <div key={idx} className={`bg-card border ${isChecked ? 'border-neon/40' : 'border-gray-800'} p-3 rounded-sm transition-all duration-300`}>
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1 pr-2">
+                                        <div className={`font-bold text-sm ${isChecked ? 'text-neon' : 'text-white'}`}>{ex.name}</div>
+                                        <div className="flex flex-wrap gap-2 text-[10px] text-gray-400 mt-1">
+                                            <span className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-300">Sets: {ex.sets}</span>
+                                            <span className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-300">Reps: {ex.reps}</span>
+                                            {ex.weight && <span className="bg-gray-800 px-1.5 py-0.5 rounded text-neon/80 font-bold">{ex.weight}</span>}
+                                        </div>
+                                        {ex.notes && (
+                                            <div className="text-[10px] text-gray-500 mt-2 italic flex items-center gap-1">
+                                                <Icon name="info" /> {ex.notes}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <label className="custom-checkbox cursor-pointer relative mt-1">
+                                        <input 
+                                            type="checkbox" 
+                                            className="hidden" 
+                                            checked={isChecked} 
+                                            onChange={() => toggleExercise(idx)}
+                                        />
+                                        <div className={`w-6 h-6 border rounded-sm flex items-center justify-center transition-colors ${isChecked ? 'bg-neon border-neon' : 'border-gray-600 bg-black'}`}>
+                                            <div className={isChecked ? 'block' : 'hidden'}>
+                                                <Icon name="check" />
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        );
+                    })}
+                    
+                    {(dayName === "Mon" || dayName === "Thu") && (
+                        <div className="bg-gray-900/50 p-3 border border-gray-800 rounded-sm mt-4">
+                            <h4 className="text-[10px] text-gray-400 uppercase font-bold mb-1">Post-Workout Protocol</h4>
+                            <div className="text-xs text-white flex items-center gap-2">
+                                <span className="text-neon font-bold">1.</span> Drink 500ml Water immediately.
+                            </div>
+                        </div>
+                    )}
+
+                    <button onClick={toggleFinish} className={`w-full py-4 font-bold text-lg uppercase tracking-wider transition-all mt-6 rounded-sm shadow-xl ${isCompleted ? 'bg-neon text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+                        {isCompleted ? "MISSION ACCOMPLISHED" : "FINISH WORKOUT"}
+                    </button>
+                </div>
+            );
+        };
+
+        const CalendarSection = ({ state }) => {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysArray = Array.from({length: daysInMonth}, (_, i) => i + 1);
+
+            return (
+                <Card title="Consistency Log" className="fade-in">
+                    <div className="grid grid-cols-7 gap-2 mb-4">
+                        {["S","M","T","W","T","F","S"].map((d,i) => <div key={i} className="text-center text-[10px] text-gray-600 font-bold">{d}</div>)}
+                        {daysArray.map(day => {
+                            const dStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                            const isDone = state.workoutHistory[dStr];
+                            const isToday = day === today.getDate();
+                            return (
+                                <div key={day} className={`aspect-square flex items-center justify-center text-xs border rounded-sm relative ${isDone ? 'bg-neon/20 border-neon text-neon' : 'border-gray-800 text-gray-600'} ${isToday ? 'border-white text-white' : ''}`}>
+                                    {day}
+                                </div>
+                            )
+                        })}
+                    </div>
+                    <div className="flex gap-4 text-[10px] justify-center text-gray-500 uppercase">
+                        <div className="flex items-center gap-2"><div className="w-2 h-2 bg-neon rounded-full"></div> Done</div>
+                        <div className="flex items-center gap-2"><div className="w-2 h-2 border border-gray-600 rounded-full"></div> Missed</div>
+                    </div>
+                </Card>
+            );
+        };
+
+        const DataSection = ({ state, updateState, resetAllData }) => {
+            const [localWeight, setLocalWeight] = useState(state.weight);
+            const [localWaist, setLocalWaist] = useState(state.waist);
+
+            const saveLog = () => {
+                const dateStr = getTodayDate();
+                const newLog = { date: dateStr, weight: localWeight, waist: localWaist };
+                const updatedLogs = [newLog, ...state.logs]; // Add new log to start of array
+                
+                // Update Logs AND Current Stats
+                updateState('logs', updatedLogs);
+                updateState('weight', localWeight);
+                updateState('waist', localWaist);
+                
+                alert("Entry Saved.");
+            };
+
+            return (
+                <div className="space-y-4 fade-in">
+                    <Card title="Update Metrics">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-[10px] text-gray-500 uppercase mb-1 block">Weight (KG)</label>
+                                <input type="number" value={localWeight} onChange={(e) => setLocalWeight(Number(e.target.value))} className="w-full bg-black border border-gray-700 p-2 text-white font-bold text-lg rounded-sm" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-gray-500 uppercase mb-1 block">Waist (CM)</label>
+                                <input type="number" value={localWaist} onChange={(e) => setLocalWaist(Number(e.target.value))} className="w-full bg-black border border-gray-700 p-2 text-white font-bold text-lg rounded-sm" />
+                            </div>
+                        </div>
+                        <button onClick={saveLog} className="w-full mt-4 bg-white text-black font-bold py-3 uppercase text-xs hover:bg-gray-200 rounded-sm">
+                            Save Entry
+                        </button>
+                    </Card>
+
+                    <Card title="History Log">
+                        {state.logs.length === 0 ? (
+                            <div className="text-center text-gray-600 text-xs py-4">NO DATA RECORDED</div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-xs text-left">
+                                    <thead>
+                                        <tr className="text-gray-500 border-b border-gray-800">
+                                            <th className="pb-2 font-normal">DATE</th>
+                                            <th className="pb-2 font-normal">KG</th>
+                                            <th className="pb-2 font-normal">CM</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-900">
+                                        {state.logs.map((log, i) => (
+                                            <tr key={i}>
+                                                <td className="py-2 text-gray-300 font-mono">{log.date}</td>
+                                                <td className="py-2 text-neon font-bold">{log.weight}</td>
+                                                <td className="py-2 text-gray-300">{log.waist}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </Card>
+
+                    <div className="text-center pt-8 pb-4">
+                        <button onClick={resetAllData} className="text-[10px] text-red-900 hover:text-red-500 flex items-center justify-center gap-2 mx-auto transition-colors">
+                           <Icon name="trash" /> FACTORY RESET DATA
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APPLICATION ---
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState("dashboard");
+            const [storageError, setStorageError] = useState(false);
+            
+            // --- MASTER STATE ---
+            // This initializes ONCE from LocalStorage.
+            const [state, setState] = useState(() => {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) return JSON.parse(saved);
+                } catch (e) {
+                    console.error("Storage load failed", e);
+                    setStorageError(true);
+                }
+                // Default State
+                return {
+                    calories: 1800,
+                    protein: 100,
+                    steps: 8000,
+                    weight: 62.3,
+                    waist: 0,
+                    logs: [],
+                    workoutHistory: {}, // { '2026-02-07': true }
+                    sessionProgress: {} // { '2026-02-07': { 0: true, 1: false } }
+                };
+            });
+
+            // --- SAVE EFFECT ---
+            // Whenever 'state' changes, save it to LocalStorage immediately.
+            useEffect(() => {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                } catch (e) {
+                    setStorageError(true);
+                }
+            }, [state]);
+
+            // Helper to update state cleanly
+            const updateState = (key, value) => {
+                setState(prev => ({ ...prev, [key]: value }));
+            };
+
+            const resetAllData = () => {
+                if(confirm("WARNING: This will delete ALL your logs and progress. Are you sure?")) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    window.location.reload();
+                }
+            };
+
+            // Calculated Constants
+            const today = getTodayDate();
+            const TARGET_DATE = new Date("2026-03-20T00:00:00");
+            const START_DATE = new Date("2026-02-07T00:00:00"); 
+            const now = new Date();
+            const daysRemaining = Math.ceil((TARGET_DATE - now) / (1000 * 60 * 60 * 24));
+            const dayNumber = Math.ceil((now - START_DATE) / (1000 * 60 * 60 * 24));
+
+            return (
+                <div className="flex flex-col h-full max-w-md mx-auto bg-black border-x border-gray-900 shadow-2xl relative">
+                    <div className="scanline"></div>
+                    
+                    {/* HEADER */}
+                    <div className="bg-black border-b border-gray-800 p-4 shrink-0 flex justify-between items-center z-20">
+                        <div>
+                            <h1 className="text-neon font-bold tracking-widest text-sm">MARCH 20 PROTOCOL</h1>
+                            <div className="text-[10px] text-gray-500 flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${storageError ? 'bg-red-500' : 'bg-neon animate-pulse'}`}></div>
+                                {storageError ? "STORAGE ERROR" : `ONLINE // ${today}`}
+                            </div>
+                        </div>
+                        <div className="text-right">
+                             <div className="text-[10px] text-gray-500">USER: 16M / {state.weight}KG</div>
+                             <div className="text-xs font-bold text-white">{state.weight}KG</div>
+                        </div>
+                    </div>
+
+                    {/* ERROR BANNER */}
+                    {storageError && (
+                        <div className="bg-red-900 text-white text-xs p-2 text-center font-bold">
+                            ⚠️ BROWSER STORAGE DISABLED. DATA WILL NOT SAVE.
+                        </div>
+                    )}
+
+                    {/* CONTENT */}
+                    <div className="flex-1 overflow-y-auto p-4 z-10 custom-scrollbar pb-24">
+                        {activeTab === 'dashboard' && <Dashboard state={state} today={today} daysRemaining={daysRemaining} dayNumber={dayNumber} setActiveTab={setActiveTab} />}
+                        {activeTab === 'fuel' && <FuelSection state={state} updateState={updateState} />}
+                        {activeTab === 'train' && <WorkoutSection state={state} updateState={updateState} today={today} />}
+                        {activeTab === 'log' && <CalendarSection state={state} />}
+                        {activeTab === 'data' && <DataSection state={state} updateState={updateState} resetAllData={resetAllData} />}
+                    </div>
+
+                    {/* FOOTER NAV */}
+                    <div className="shrink-0 bg-black border-t border-gray-800 p-1 grid grid-cols-5 gap-1 z-30 fixed bottom-0 w-full max-w-md">
+                        <NavBtn id="dashboard" label="HUB" icon="home" active={activeTab} set={setActiveTab} />
+                        <NavBtn id="fuel" label="FUEL" icon="fuel" active={activeTab} set={setActiveTab} />
+                        <NavBtn id="train" label="TRAIN" icon="train" active={activeTab} set={setActiveTab} />
+                        <NavBtn id="log" label="LOG" icon="log" active={activeTab} set={setActiveTab} />
+                        <NavBtn id="data" label="DATA" icon="data" active={activeTab} set={setActiveTab} />
+                    </div>
+                </div>
+            );
+        };
+
+        const NavBtn = ({ id, label, icon, active, set }) => (
+            <button 
+                onClick={() => set(id)} 
+                className={`flex flex-col items-center justify-center p-3 rounded-sm transition-colors ${active === id ? 'text-neon bg-gray-900' : 'text-gray-600 hover:text-gray-300'}`}
+            >
+                <Icon name={icon} />
+                <span className="text-[9px] mt-1 font-bold">{label}</span>
+            </button>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
+
