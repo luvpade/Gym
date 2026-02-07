@@ -78,6 +78,7 @@
         const IconHome = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
         const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
         const IconInfo = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
+        const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
 
         // --- SHARED COMPONENTS ---
         const Card = ({ children, className = "", title, color = "border-subtle" }) => (
@@ -147,7 +148,6 @@
         );
 
         const FuelSection = ({ userData, setUserData }) => {
-            // Logic for status message
             let statusCard;
             if (userData.calories < 1500) {
                 statusCard = <div className="bg-crimson/20 border border-crimson p-4 rounded-sm mb-4"><h4 className="font-bold text-crimson flex items-center gap-2"><IconAlert/> STARVATION MODE</h4><p className="text-xs text-gray-300 mt-1">Metabolism will slow down. EAT MORE.</p></div>;
@@ -208,7 +208,7 @@
             const dayIndex = currentTime.getDay(); 
             const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
             const dayName = days[dayIndex];
-            const dateString = currentTime.toISOString().split('T')[0];
+            const dateString = currentTime.toLocaleDateString('en-CA');
             const isCompleted = workoutHistory[dateString];
 
             let workoutName = "Active Rest";
@@ -217,7 +217,6 @@
                 { name: "Neck Curls (Optional)", sets: "3", reps: "15-20", notes: "Slow controlled reps." } 
             ];
 
-            // UPDATE: Integrated specific exercises from image for Mon/Thu
             if (dayName === "Mon" || dayName === "Thu") {
                 workoutName = "Shoulder & Back Focus";
                 exercises = [ 
@@ -237,7 +236,6 @@
                 ];
             }
 
-            // Ensure session progress exists for today
             const currentProgress = sessionProgress[dateString] || {};
 
             const toggleExercise = (index) => {
@@ -294,7 +292,6 @@
                         })}
                     </div>
                     
-                    {/* Post Workout Instructions */}
                     {(dayName === "Mon" || dayName === "Thu") && (
                         <div className="bg-gray-900/50 p-3 border border-gray-800 rounded-sm mt-4">
                             <h4 className="text-xs text-gray-400 uppercase font-bold mb-1">Post-Workout Order</h4>
@@ -347,16 +344,24 @@
             const [localWaist, setLocalWaist] = useState(userData.waist);
 
             const saveLog = () => {
-                const dateStr = new Date().toISOString().split('T')[0];
+                const dateStr = new Date().toLocaleDateString('en-CA');
                 const newLog = { date: dateStr, weight: localWeight, waist: localWaist };
+                const updatedLogs = [newLog, ...userData.logs];
                 setUserData({
                     ...userData,
                     weight: localWeight,
                     waist: localWaist,
-                    logs: [newLog, ...userData.logs]
+                    logs: updatedLogs
                 });
                 alert("Entry Saved.");
             };
+
+            const resetData = () => {
+                if(confirm("Are you sure you want to reset all data?")) {
+                    localStorage.clear();
+                    window.location.reload();
+                }
+            }
 
             return (
                 <div className="space-y-4 fade-in">
@@ -400,6 +405,12 @@
                             </table>
                         )}
                     </Card>
+
+                    <div className="text-center pt-8">
+                        <button onClick={resetData} className="text-[10px] text-red-900 hover:text-red-500 flex items-center justify-center gap-2 mx-auto">
+                           <IconTrash /> FACTORY RESET DATA
+                        </button>
+                    </div>
                 </div>
             );
         };
@@ -409,23 +420,49 @@
             const [activeTab, setActiveTab] = useState("dashboard");
             const [currentTime, setCurrentTime] = useState(new Date());
             
-            // Global State
-            const [userData, setUserData] = useState({
-                calories: 1800,
-                protein: 100,
-                steps: 8000,
-                weight: 62.3,
-                waist: 0,
-                logs: []
+            // --- PERSISTENT STATE ---
+            
+            // 1. User Data
+            const [userData, setUserData] = useState(() => {
+                const saved = localStorage.getItem('march20_userData');
+                return saved ? JSON.parse(saved) : {
+                    calories: 1800,
+                    protein: 100,
+                    steps: 8000,
+                    weight: 62.3,
+                    waist: 0,
+                    logs: []
+                };
             });
 
-            const [workoutHistory, setWorkoutHistory] = useState({});
+            // 2. Workout History (Completed Days)
+            const [workoutHistory, setWorkoutHistory] = useState(() => {
+                const saved = localStorage.getItem('march20_workoutHistory');
+                return saved ? JSON.parse(saved) : {};
+            });
             
-            // New State for individual exercise checkboxes
-            const [sessionProgress, setSessionProgress] = useState({});
+            // 3. Session Progress (Checkboxes for exercises)
+            const [sessionProgress, setSessionProgress] = useState(() => {
+                const saved = localStorage.getItem('march20_sessionProgress');
+                return saved ? JSON.parse(saved) : {};
+            });
 
             const TARGET_DATE = new Date("2026-03-20T00:00:00");
             const START_DATE = new Date("2026-02-07T00:00:00"); 
+
+            // --- EFFECTS FOR SAVING ---
+
+            useEffect(() => {
+                localStorage.setItem('march20_userData', JSON.stringify(userData));
+            }, [userData]);
+
+            useEffect(() => {
+                localStorage.setItem('march20_workoutHistory', JSON.stringify(workoutHistory));
+            }, [workoutHistory]);
+
+            useEffect(() => {
+                localStorage.setItem('march20_sessionProgress', JSON.stringify(sessionProgress));
+            }, [sessionProgress]);
 
             useEffect(() => {
                 const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -446,11 +483,11 @@
                             <h1 className="text-neon font-bold tracking-widest text-sm">MARCH 20 PROTOCOL</h1>
                             <div className="text-[10px] text-gray-500 flex items-center gap-2">
                                 <div className="w-2 h-2 bg-neon rounded-full animate-pulse"></div>
-                                ONLINE // {currentTime.toISOString().split('T')[0]}
+                                ONLINE // {currentTime.toLocaleDateString('en-CA')}
                             </div>
                         </div>
                         <div className="text-right">
-                             <div className="text-[10px] text-gray-500">USER: 16M / 62.3KG</div>
+                             <div className="text-[10px] text-gray-500">USER: 16M / {userData.weight}KG</div>
                              <div className="text-xs font-bold text-white">{userData.weight}KG</div>
                         </div>
                     </div>
