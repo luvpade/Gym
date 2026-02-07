@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MARCH 20 PROTOCOL | BODY RECOMP</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#000000',
+                        card: '#111111',
+                        neon: '#39ff14',
+                        crimson: '#DC143C',
+                        warning: '#FFD700',
+                        subtle: '#333333'
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #000000; color: #e5e5e5; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #39ff14; }
+        .glow-text { text-shadow: 0 0 10px rgba(57, 255, 20, 0.5); }
+        .scanline {
+            width: 100%; height: 100px; z-index: 10;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(57, 255, 20, 0.02) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1; position: absolute; bottom: 100%;
+            animation: scanline 10s linear infinite; pointer-events: none;
+        }
+        @keyframes scanline { 0% { bottom: 100%; } 100% { bottom: -100%; } }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Checkbox */
+        .custom-checkbox input:checked + div {
+            background-color: #39ff14;
+            border-color: #39ff14;
+        }
+        .custom-checkbox input:checked + div svg {
+            display: block;
+        }
+    </style>
+</head>
+<body class="font-mono text-sm h-screen overflow-hidden">
+    <div id="root" class="h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ICONS ---
+        const IconActivity = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>;
+        const IconUtensils = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>;
+        const IconCalendar = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+        const IconScale = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>;
+        const IconAlert = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+        const IconHome = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+        const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+        const IconInfo = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
+
+        // --- SHARED COMPONENTS ---
+        const Card = ({ children, className = "", title, color = "border-subtle" }) => (
+            <div className={`bg-card border ${color} p-4 rounded-sm shadow-lg mb-4 ${className}`}>
+                {title && <h3 className="text-gray-400 text-xs uppercase tracking-widest mb-3 border-b border-gray-800 pb-2 flex justify-between items-center">{title}</h3>}
+                {children}
+            </div>
+        );
+
+        const ProgressBar = ({ value, max, color = "bg-neon" }) => {
+            const width = Math.min(100, Math.max(0, (value / max) * 100));
+            return (
+                <div className="w-full bg-gray-800 h-2 rounded-sm mt-1 overflow-hidden">
+                    <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${width}%` }}></div>
+                </div>
+            );
+        };
+
+        // --- SUB-COMPONENTS ---
+
+        const Dashboard = ({ userData, daysRemaining, dayNumber, isSaturday, setActiveTab }) => (
+            <div className="space-y-4 fade-in">
+                <div className="grid grid-cols-2 gap-4">
+                    <Card color="border-neon/30" className="flex flex-col items-center justify-center py-6 text-center">
+                        <span className="text-gray-500 text-xs">DEADLINE</span>
+                        <span className="text-3xl font-bold text-white glow-text">{daysRemaining}</span>
+                        <span className="text-neon text-xs">DAYS LEFT</span>
+                    </Card>
+                    <Card color="border-gray-700" className="flex flex-col items-center justify-center py-6 text-center">
+                        <span className="text-gray-500 text-xs">PROTOCOL DAY</span>
+                        <span className="text-3xl font-bold text-white">{dayNumber > 0 ? dayNumber : 1}<span className="text-gray-600 text-sm">/41</span></span>
+                        <span className="text-gray-400 text-xs">STATUS: ACTIVE</span>
+                    </Card>
+                </div>
+
+                {isSaturday && (
+                    <div className="bg-crimson/20 border border-crimson p-4 rounded-sm flex items-center justify-between animate-pulse">
+                        <div className="flex items-center gap-3">
+                            <IconAlert />
+                            <span className="font-bold text-crimson">MEASUREMENT DAY</span>
+                        </div>
+                        <button onClick={() => setActiveTab('data')} className="text-xs bg-crimson text-black px-3 py-1 font-bold rounded-sm hover:bg-white hover:text-black transition">
+                            RECORD NOW
+                        </button>
+                    </div>
+                )}
+
+                <Card title="Daily Fuel Status">
+                    <div className="space-y-4">
+                        <div>
+                            <div className="flex justify-between text-xs mb-1">
+                                <span className="text-gray-400">CALORIES ({userData.calories})</span>
+                                <span className={userData.calories > 2100 ? "text-crimson" : "text-neon"}>Target: 1700-1900</span>
+                            </div>
+                            <ProgressBar value={userData.calories} max={2500} color={userData.calories > 2100 ? "bg-crimson" : "bg-neon"} />
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-xs mb-1">
+                                <span className="text-gray-400">PROTEIN ({userData.protein}g)</span>
+                                <span className={userData.protein < 90 ? "text-crimson" : "text-neon"}>Target: &gt;95g</span>
+                            </div>
+                            <ProgressBar value={userData.protein} max={150} color={userData.protein < 90 ? "bg-crimson" : "bg-neon"} />
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        );
+
+        const FuelSection = ({ userData, setUserData }) => {
+            // Logic for status message
+            let statusCard;
+            if (userData.calories < 1500) {
+                statusCard = <div className="bg-crimson/20 border border-crimson p-4 rounded-sm mb-4"><h4 className="font-bold text-crimson flex items-center gap-2"><IconAlert/> STARVATION MODE</h4><p className="text-xs text-gray-300 mt-1">Metabolism will slow down. EAT MORE.</p></div>;
+            } else if (userData.calories > 2100) {
+                statusCard = <div className="bg-warning/20 border border-warning p-4 rounded-sm mb-4"><h4 className="font-bold text-warning flex items-center gap-2"><IconAlert/> CALORIE SURPLUS</h4><p className="text-xs text-gray-300 mt-1">High risk of fat gain. Reduce intake.</p></div>;
+            } else if (userData.calories >= 1700 && userData.calories <= 1900 && userData.protein > 95) {
+                statusCard = <div className="bg-neon/20 border border-neon p-4 rounded-sm mb-4"><h4 className="font-bold text-neon flex items-center gap-2">✅ PERFECT RECOMP ZONE</h4><p className="text-xs text-gray-300 mt-1">Optimal growth zone active.</p></div>;
+            } else if (userData.protein < 90) {
+                statusCard = <div className="bg-crimson/10 border border-crimson p-4 rounded-sm mb-4"><h4 className="font-bold text-crimson flex items-center gap-2">❌ LOW PROTEIN</h4><p className="text-xs text-gray-300 mt-1">Muscle atrophy risk.</p></div>;
+            } else {
+                statusCard = <div className="bg-gray-800 border border-gray-600 p-4 rounded-sm mb-4"><h4 className="font-bold text-gray-300">STATUS: OKAY</h4><p className="text-xs text-gray-400 mt-1">Acceptable, but aim for optimization.</p></div>;
+            }
+
+            const bmr = 1600;
+            const activityBurn = userData.steps * 0.045;
+            const tdee = bmr + activityBurn;
+            const balance = userData.calories - tdee;
+            const weightChange = balance / 7700;
+            const predictedWeight = (userData.weight + weightChange).toFixed(2);
+
+            return (
+                <div className="fade-in">
+                    {statusCard}
+                    <Card title="Input Daily Macros">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">CALORIES</label>
+                                <input type="number" value={userData.calories} onChange={(e) => setUserData({...userData, calories: Number(e.target.value)})} className="w-full bg-black border border-gray-700 p-2 text-white focus:border-neon outline-none text-lg font-bold" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">PROTEIN (g)</label>
+                                <input type="number" value={userData.protein} onChange={(e) => setUserData({...userData, protein: Number(e.target.value)})} className="w-full bg-black border border-gray-700 p-2 text-white focus:border-neon outline-none text-lg font-bold" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs text-gray-500 mb-1">STEPS TAKEN</label>
+                                <input type="number" value={userData.steps} onChange={(e) => setUserData({...userData, steps: Number(e.target.value)})} className="w-full bg-black border border-gray-700 p-2 text-white focus:border-neon outline-none text-lg font-bold" />
+                            </div>
+                        </div>
+                    </Card>
+                    <Card title="Prediction Engine" color="border-gray-800">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <div className="text-xs text-gray-500">EST. TDEE</div>
+                                <div className="text-xl font-bold">{Math.round(tdee)} kcal</div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-xs text-gray-500">TOMORROW'S WEIGHT</div>
+                                <div className={`text-xl font-bold ${weightChange > 0 ? 'text-warning' : 'text-neon'}`}>{predictedWeight} kg</div>
+                                <div className="text-[10px] text-gray-600">({weightChange > 0 ? '+' : ''}{(weightChange * 1000).toFixed(0)}g change)</div>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            );
+        };
+
+        const WorkoutSection = ({ currentTime, workoutHistory, setWorkoutHistory, sessionProgress, setSessionProgress }) => {
+            const dayIndex = currentTime.getDay(); 
+            const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const dayName = days[dayIndex];
+            const dateString = currentTime.toISOString().split('T')[0];
+            const isCompleted = workoutHistory[dateString];
+
+            let workoutName = "Active Rest";
+            let exercises = [ 
+                { name: "12k Steps Walk", sets: "1", reps: "60 mins", notes: "Low intensity steady state." }, 
+                { name: "Neck Curls (Optional)", sets: "3", reps: "15-20", notes: "Slow controlled reps." } 
+            ];
+
+            // UPDATE: Integrated specific exercises from image for Mon/Thu
+            if (dayName === "Mon" || dayName === "Thu") {
+                workoutName = "Shoulder & Back Focus";
+                exercises = [ 
+                    { name: "1. Seated Shoulder Press", sets: "3", reps: "12, 10, 8-10", weight: "7.5kg", notes: "Elbows slightly forward. Do not lock out at top." }, 
+                    { name: "2. Dumbbell Rows", sets: "4", reps: "15, 12, 12, 20*", weight: "10kg", notes: "Pull to hip. Last set: Drop to 7.5kg & do 20 reps immediately." }, 
+                    { name: "3. Lateral Raises", sets: "4", reps: "15, 15, 12, 15", weight: "5kg", notes: "Pour water motion. Set 3: Use 7.5kg (Partial Reps). Set 4: Back to 5kg (Slow)." }, 
+                    { name: "4. Dumbbell Shrugs", sets: "3", reps: "20, 20, 20", weight: "10kg", notes: "Hold at top for 2 seconds. Do not roll shoulders." },
+                    { name: "5. Lying Neck Curls", sets: "3", reps: "25, 20, 15", weight: "BW", notes: "Chin to chest. Head hanging off bed. Fight the burn." }
+                ];
+            } else if (dayName === "Tue" || dayName === "Fri") {
+                workoutName = "Lower Body & Abs";
+                exercises = [ 
+                    { name: "Goblet Squats", sets: "3", reps: "10-12", weight: "10kg", notes: "Deep stretch." }, 
+                    { name: "Lunges", sets: "3", reps: "10/leg", weight: "BW/5kg", notes: "Keep torso upright." }, 
+                    { name: "Hanging Leg Raises", sets: "3", reps: "10-15", weight: "-", notes: "Control the swing." }, 
+                    { name: "Plank", sets: "3", reps: "1 min", weight: "-", notes: "Core tight." } 
+                ];
+            }
+
+            // Ensure session progress exists for today
+            const currentProgress = sessionProgress[dateString] || {};
+
+            const toggleExercise = (index) => {
+                const newProgress = { ...currentProgress, [index]: !currentProgress[index] };
+                setSessionProgress({ ...sessionProgress, [dateString]: newProgress });
+            };
+
+            const toggleComplete = () => {
+                setWorkoutHistory(prev => ({ ...prev, [dateString]: !prev[dateString] }));
+            };
+
+            return (
+                <div className="space-y-4 fade-in pb-20">
+                    <div className="flex justify-between items-end mb-2">
+                        <h2 className="text-2xl font-bold text-white uppercase">{dayName} // {workoutName}</h2>
+                    </div>
+
+                    <div className="space-y-3">
+                        {exercises.map((ex, idx) => {
+                            const isChecked = currentProgress[idx] || false;
+                            return (
+                                <div key={idx} className={`bg-card border ${isChecked ? 'border-neon/50' : 'border-gray-800'} p-3 rounded-sm transition-all duration-300`}>
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1 pr-2">
+                                            <div className={`font-bold text-base ${isChecked ? 'text-neon' : 'text-white'}`}>{ex.name}</div>
+                                            <div className="flex gap-3 text-xs text-gray-400 mt-1">
+                                                <span className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-300">Sets: {ex.sets}</span>
+                                                <span className="bg-gray-800 px-1.5 py-0.5 rounded text-gray-300">Reps: {ex.reps}</span>
+                                                {ex.weight && <span className="bg-gray-800 px-1.5 py-0.5 rounded text-neon/80 font-bold">{ex.weight}</span>}
+                                            </div>
+                                            {ex.notes && (
+                                                <div className="text-[10px] text-gray-500 mt-2 italic flex items-start gap-1">
+                                                    <span className="mt-0.5"><IconInfo /></span> {ex.notes}
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <label className="custom-checkbox cursor-pointer relative">
+                                            <input 
+                                                type="checkbox" 
+                                                className="hidden" 
+                                                checked={isChecked} 
+                                                onChange={() => toggleExercise(idx)}
+                                            />
+                                            <div className={`w-8 h-8 border-2 rounded-sm flex items-center justify-center transition-colors ${isChecked ? 'bg-neon border-neon' : 'border-gray-600 bg-black'}`}>
+                                                <div className={isChecked ? 'block' : 'hidden'}>
+                                                    <IconCheck />
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    
+                    {/* Post Workout Instructions */}
+                    {(dayName === "Mon" || dayName === "Thu") && (
+                        <div className="bg-gray-900/50 p-3 border border-gray-800 rounded-sm mt-4">
+                            <h4 className="text-xs text-gray-400 uppercase font-bold mb-1">Post-Workout Order</h4>
+                            <ul className="text-xs text-white space-y-1">
+                                <li className="flex items-center gap-2">
+                                    <span className="text-neon">1.</span> Drink Water: 500ml immediately.
+                                </li>
+                            </ul>
+                        </div>
+                    )}
+
+                    <button onClick={toggleComplete} className={`w-full py-4 font-bold text-lg uppercase tracking-wider transition-all mt-6 mb-8 rounded-sm shadow-xl ${isCompleted ? 'bg-neon text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+                        {isCompleted ? "MISSION ACCOMPLISHED" : "FINISH WORKOUT"}
+                    </button>
+                </div>
+            );
+        };
+
+        const CalendarSection = ({ currentTime, workoutHistory }) => {
+            const year = currentTime.getFullYear();
+            const month = currentTime.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysArray = Array.from({length: daysInMonth}, (_, i) => i + 1);
+
+            return (
+                <Card title="Consistency Log" className="fade-in">
+                    <div className="grid grid-cols-7 gap-2 mb-4">
+                        {["S","M","T","W","T","F","S"].map((d,i) => <div key={i} className="text-center text-xs text-gray-600 font-bold">{d}</div>)}
+                        {daysArray.map(day => {
+                            const dStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                            const isDone = workoutHistory[dStr];
+                            const isToday = day === currentTime.getDate();
+                            return (
+                                <div key={day} className={`aspect-square flex items-center justify-center text-xs border rounded-sm relative ${isDone ? 'bg-neon/20 border-neon text-neon' : 'border-gray-800 text-gray-600'} ${isToday ? 'border-white text-white' : ''}`}>
+                                    {day}
+                                </div>
+                            )
+                        })}
+                    </div>
+                    <div className="flex gap-4 text-xs justify-center text-gray-500">
+                        <div className="flex items-center gap-2"><div className="w-2 h-2 bg-neon rounded-full"></div> WORKOUT DONE</div>
+                        <div className="flex items-center gap-2"><div className="w-2 h-2 border border-gray-600 rounded-full"></div> REST/MISSED</div>
+                    </div>
+                </Card>
+            );
+        };
+
+        const DataSection = ({ userData, setUserData }) => {
+            const [localWeight, setLocalWeight] = useState(userData.weight);
+            const [localWaist, setLocalWaist] = useState(userData.waist);
+
+            const saveLog = () => {
+                const dateStr = new Date().toISOString().split('T')[0];
+                const newLog = { date: dateStr, weight: localWeight, waist: localWaist };
+                setUserData({
+                    ...userData,
+                    weight: localWeight,
+                    waist: localWaist,
+                    logs: [newLog, ...userData.logs]
+                });
+                alert("Entry Saved.");
+            };
+
+            return (
+                <div className="space-y-4 fade-in">
+                    <Card title="Update Metrics">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs text-gray-500">WEIGHT (KG)</label>
+                                <input type="number" value={localWeight} onChange={(e) => setLocalWeight(Number(e.target.value))} className="w-full bg-black border border-gray-700 p-2 text-white font-bold text-lg" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-500">WAIST (CM)</label>
+                                <input type="number" value={localWaist} onChange={(e) => setLocalWaist(Number(e.target.value))} className="w-full bg-black border border-gray-700 p-2 text-white font-bold text-lg" />
+                            </div>
+                        </div>
+                        <button onClick={saveLog} className="w-full mt-4 bg-white text-black font-bold py-2 uppercase text-xs hover:bg-gray-200">
+                            Save Entry
+                        </button>
+                    </Card>
+
+                    <Card title="History Log">
+                        {userData.logs.length === 0 ? (
+                            <div className="text-center text-gray-600 text-xs py-4">NO DATA RECORDED</div>
+                        ) : (
+                            <table className="w-full text-xs text-left">
+                                <thead>
+                                    <tr className="text-gray-500 border-b border-gray-800">
+                                        <th className="pb-2">DATE</th>
+                                        <th className="pb-2">KG</th>
+                                        <th className="pb-2">CM</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {userData.logs.map((log, i) => (
+                                        <tr key={i} className="border-b border-gray-900">
+                                            <td className="py-2 text-gray-300">{log.date}</td>
+                                            <td className="py-2 text-neon">{log.weight}</td>
+                                            <td className="py-2 text-gray-300">{log.waist}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </Card>
+                </div>
+            );
+        };
+
+        // --- MAIN APP CONTAINER ---
+        const App = () => {
+            const [activeTab, setActiveTab] = useState("dashboard");
+            const [currentTime, setCurrentTime] = useState(new Date());
+            
+            // Global State
+            const [userData, setUserData] = useState({
+                calories: 1800,
+                protein: 100,
+                steps: 8000,
+                weight: 62.3,
+                waist: 0,
+                logs: []
+            });
+
+            const [workoutHistory, setWorkoutHistory] = useState({});
+            
+            // New State for individual exercise checkboxes
+            const [sessionProgress, setSessionProgress] = useState({});
+
+            const TARGET_DATE = new Date("2026-03-20T00:00:00");
+            const START_DATE = new Date("2026-02-07T00:00:00"); 
+
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const daysRemaining = Math.ceil((TARGET_DATE - currentTime) / (1000 * 60 * 60 * 24));
+            const dayNumber = Math.ceil((currentTime - START_DATE) / (1000 * 60 * 60 * 24));
+            const isSaturday = currentTime.getDay() === 6;
+
+            return (
+                <div className="flex flex-col h-full max-w-md mx-auto bg-black border-x border-gray-900 shadow-2xl relative">
+                    <div className="scanline"></div>
+                    
+                    {/* TOP BAR */}
+                    <div className="bg-black border-b border-gray-800 p-4 shrink-0 flex justify-between items-center z-20">
+                        <div>
+                            <h1 className="text-neon font-bold tracking-widest text-sm">MARCH 20 PROTOCOL</h1>
+                            <div className="text-[10px] text-gray-500 flex items-center gap-2">
+                                <div className="w-2 h-2 bg-neon rounded-full animate-pulse"></div>
+                                ONLINE // {currentTime.toISOString().split('T')[0]}
+                            </div>
+                        </div>
+                        <div className="text-right">
+                             <div className="text-[10px] text-gray-500">USER: 16M / 62.3KG</div>
+                             <div className="text-xs font-bold text-white">{userData.weight}KG</div>
+                        </div>
+                    </div>
+
+                    {/* SCROLLABLE CONTENT AREA */}
+                    <div className="flex-1 overflow-y-auto p-4 pb-20 z-10 custom-scrollbar">
+                        {activeTab === 'dashboard' && 
+                            <Dashboard 
+                                userData={userData} 
+                                daysRemaining={daysRemaining} 
+                                dayNumber={dayNumber} 
+                                isSaturday={isSaturday} 
+                                setActiveTab={setActiveTab} 
+                            />
+                        }
+                        {activeTab === 'fuel' && 
+                            <FuelSection userData={userData} setUserData={setUserData} />
+                        }
+                        {activeTab === 'workout' && 
+                            <WorkoutSection 
+                                currentTime={currentTime} 
+                                workoutHistory={workoutHistory} 
+                                setWorkoutHistory={setWorkoutHistory}
+                                sessionProgress={sessionProgress}
+                                setSessionProgress={setSessionProgress}
+                            />
+                        }
+                        {activeTab === 'calendar' && 
+                            <CalendarSection currentTime={currentTime} workoutHistory={workoutHistory} />
+                        }
+                        {activeTab === 'data' && 
+                            <DataSection userData={userData} setUserData={setUserData} />
+                        }
+                    </div>
+
+                    {/* BOTTOM NAV */}
+                    <div className="shrink-0 bg-black border-t border-gray-800 p-2 grid grid-cols-5 gap-1 z-30">
+                        <NavButton tab="dashboard" icon={<IconHome />} label="HUB" activeTab={activeTab} setActiveTab={setActiveTab} />
+                        <NavButton tab="fuel" icon={<IconUtensils />} label="FUEL" activeTab={activeTab} setActiveTab={setActiveTab} />
+                        <NavButton tab="workout" icon={<IconActivity />} label="TRAIN" activeTab={activeTab} setActiveTab={setActiveTab} />
+                        <NavButton tab="calendar" icon={<IconCalendar />} label="LOG" activeTab={activeTab} setActiveTab={setActiveTab} />
+                        <NavButton tab="data" icon={<IconScale />} label="DATA" activeTab={activeTab} setActiveTab={setActiveTab} />
+                    </div>
+                </div>
+            );
+        };
+
+        const NavButton = ({ tab, icon, label, activeTab, setActiveTab }) => (
+            <button 
+                onClick={() => setActiveTab(tab)} 
+                className={`flex flex-col items-center justify-center p-2 rounded-sm transition-colors ${activeTab === tab ? 'text-neon bg-gray-900' : 'text-gray-600 hover:text-gray-300'}`}
+            >
+                {icon}
+                <span className="text-[9px] mt-1 font-bold">{label}</span>
+            </button>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
+
