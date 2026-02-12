@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The March 20 Protocol</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind Config for Custom Colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neonGreen: '#39ff14',
+                        crimsonRed: '#dc143c',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { background-color: #000000; color: #e5e5e5; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ICONS (SVG Components) ---
+        const Icons = {
+            Dumbbell: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>,
+            Utensils: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>,
+            Activity: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+            AlertTriangle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
+            CheckCircle2: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>,
+            History: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
+            Ruler: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>,
+            Flame: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.243-2.143.7-3.143.626 1.626 1.8 2.643 2.8 3.143Z"/></svg>
+        };
+
+        // --- DATA & CONSTANTS ---
+        const END_DATE = new Date('2026-03-20');
+        const WORKOUT_PLAN = {
+            Monday: {
+                title: "Chest & Triceps (Front Armor)",
+                focus: "Upper Chest Shelf & Arm Thickness",
+                exercises: [
+                    { name: "Dumbbell Floor Press", sets: "4", reps: "12-15", weight: "10kg", notes: "Squeeze at top" },
+                    { name: "Dumbbell Hex Press", sets: "3", reps: "12-15", weight: "7.5kg", notes: "Inner chest line" },
+                    { name: "Dumbbell Floor Flys", sets: "3", reps: "15", weight: "7.5kg", notes: "Slow eccentric" },
+                    { name: "Overhead Tricep Extension", sets: "3", reps: "12", weight: "10kg", notes: "One DB, two hands" },
+                    { name: "Bench Dips", sets: "3", reps: "15", weight: "Body", notes: "Use study table" },
+                    { name: "Stomach Vacuums", sets: "3", reps: "30s", weight: "Body", notes: "Morning ritual" }
+                ]
+            },
+            Tuesday: {
+                title: "Back & Biceps (The Width)",
+                focus: "Widening the V-Taper",
+                exercises: [
+                    { name: "Dumbbell Rows", sets: "4", reps: "12/arm", weight: "10kg", notes: "Pull to hip" },
+                    { name: "Dumbbell Pullovers", sets: "3", reps: "15", weight: "10kg", notes: "Stretch lats" },
+                    { name: "Bicep Curls", sets: "3", reps: "12", weight: "7.5kg", notes: "Strict form" },
+                    { name: "Hammer Curls", sets: "3", reps: "12", weight: "7.5kg", notes: "Thick arms" },
+                    { name: "Superman Holds", sets: "3", reps: "45s", weight: "Body", notes: "Lower back" },
+                    { name: "Neck Curls", sets: "3", reps: "20", weight: "5kg", notes: "Thick neck" }
+                ]
+            },
+            Wednesday: {
+                title: "Shoulders & Neck (The Frame)",
+                focus: "Capped Shoulders 3D Look",
+                exercises: [
+                    { name: "Dumbbell Shoulder Press", sets: "4", reps: "10-12", weight: "10kg", notes: "Seated or Standing" },
+                    { name: "Lateral Raises (100 Reps)", sets: "5", reps: "20", weight: "2.5kg", notes: "30s rest only" },
+                    { name: "Front Raises", sets: "3", reps: "12", weight: "5kg", notes: "Control" },
+                    { name: "Rear Delt Flys", sets: "3", reps: "15", weight: "2.5kg", notes: "Lean forward" },
+                    { name: "Neck Curls", sets: "3", reps: "20", weight: "5kg", notes: "Extra volume" }
+                ]
+            },
+            Thursday: {
+                title: "Upper Body Hypertrophy",
+                focus: "Chest & Back Density",
+                exercises: [
+                    { name: "Dumbbell Floor Press", sets: "3", reps: "15", weight: "10kg", notes: "Volume" },
+                    { name: "Dumbbell Rows", sets: "3", reps: "15", weight: "10kg", notes: "Volume" },
+                    { name: "Wide Pushups", sets: "3", reps: "Failure", weight: "Body", notes: "Chest width" },
+                    { name: "One-Arm DB Rows", sets: "3", reps: "12", weight: "10kg", notes: "Focus squeeze" },
+                    { name: "Dumbbell Shrugs", sets: "4", reps: "20", weight: "10kg", notes: "2s hold at top" }
+                ]
+            },
+            Friday: {
+                title: "The Illusion Day",
+                focus: "Shoulders, Arms & Neck Pop",
+                exercises: [
+                    { name: "Lateral Raises", sets: "4", reps: "20", weight: "5kg", notes: "Strict form" },
+                    { name: "Concentration Curls", sets: "3", reps: "12", weight: "7.5kg", notes: "Peak" },
+                    { name: "Tricep Kickbacks", sets: "3", reps: "15", weight: "5kg", notes: "Definition" },
+                    { name: "Hammer Curls", sets: "3", reps: "12", weight: "7.5kg", notes: "Width" },
+                    { name: "Neck Curls", sets: "4", reps: "25", weight: "5kg", notes: "Grow the yoke" },
+                    { name: "Stomach Vacuums", sets: "5", reps: "30s", weight: "Body", notes: "Tight waist" }
+                ]
+            },
+            Saturday: {
+                title: "Legs & Core Foundation",
+                focus: "Testosterone Boost & Fat Burn",
+                exercises: [
+                    { name: "Goblet Squats", sets: "4", reps: "15-20", weight: "10kg", notes: "Deep" },
+                    { name: "Lunges", sets: "3", reps: "12/leg", weight: "7.5kg", notes: "Balance" },
+                    { name: "Dumbbell Deadlifts", sets: "3", reps: "15", weight: "10kg", notes: "Hinge" },
+                    { name: "Plank", sets: "3", reps: "1 min", weight: "Body", notes: "Core tight" },
+                    { name: "Leg Raises", sets: "3", reps: "20", weight: "Body", notes: "Lower abs" },
+                    { name: "MEASURE WAIST/WEIGHT", sets: "1", reps: "1", weight: "-", notes: "Weekly Check-in" }
+                ]
+            },
+            Sunday: {
+                title: "REST & REPAIR",
+                focus: "Growth Hormone Release",
+                exercises: [
+                    { name: "Active Recovery Walk", sets: "1", reps: "12k Steps", weight: "-", notes: "Keep moving" },
+                    { name: "No Lifting", sets: "-", reps: "-", weight: "-", notes: "Let muscles grow" },
+                    { name: "Hit Protein Goal", sets: "-", reps: "110g", weight: "-", notes: "Crucial" }
+                ]
+            }
+        };
+
+        const MeasurementReminder = ({ day }) => {
+            if (day === 'Saturday') {
+                return (
+                    <div className="bg-yellow-500/20 border-l-4 border-yellow-500 p-4 mb-6 animate-pulse">
+                        <div className="flex items-center">
+                            <Icons.Ruler className="h-6 w-6 text-yellow-500 mr-3" />
+                            <div>
+                                <p className="font-bold text-yellow-500">⚠️ MEASUREMENT DAY</p>
+                                <p className="text-sm text-yellow-200">Take waist & weight measurements on an empty stomach immediately.</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            return null;
+        };
+
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [calories, setCalories] = useState('');
+            const [protein, setProtein] = useState('');
+            const [weight, setWeight] = useState('');
+            const [waist, setWaist] = useState('');
+            const [measurements, setMeasurements] = useState([
+                { date: '2026-02-08', weight: 62.3, waist: 80 }
+            ]);
+            const [completedExercises, setCompletedExercises] = useState({});
+            
+            // Streak Logic
+            const [streak, setStreak] = useState(0);
+            const [lastLogDate, setLastLogDate] = useState(null);
+            const [manualStreakInput, setManualStreakInput] = useState('');
+            const [showStreakEditor, setShowStreakEditor] = useState(false);
+
+            // Derived Data
+            const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+            const daysLeft = Math.ceil((END_DATE - currentDate) / (1000 * 60 * 60 * 24));
+            const progressPercent = Math.max(0, Math.min(100, ((41 - daysLeft) / 41) * 100));
+            const todaysWorkout = WORKOUT_PLAN[dayName] || WORKOUT_PLAN['Sunday'];
+
+            // Initialization (Load from LocalStorage)
+            useEffect(() => {
+                const savedStreak = localStorage.getItem('march20_streak');
+                const savedLastLogDate = localStorage.getItem('march20_lastLogDate');
+                const savedMeasurements = localStorage.getItem('march20_measurements');
+                
+                if (savedStreak) setStreak(parseInt(savedStreak));
+                if (savedLastLogDate) setLastLogDate(savedLastLogDate);
+                if (savedMeasurements) setMeasurements(JSON.parse(savedMeasurements));
+            }, []);
+
+            // Handlers
+            const handleExerciseToggle = (exName) => {
+                setCompletedExercises(prev => ({
+                    ...prev,
+                    [exName]: !prev[exName]
+                }));
+            };
+
+            const saveMeasurement = () => {
+                if (weight && waist) {
+                    const newEntry = {
+                        date: currentDate.toISOString().split('T')[0],
+                        weight: parseFloat(weight),
+                        waist: parseFloat(waist)
+                    };
+                    const updatedMeasurements = [...measurements, newEntry];
+                    setMeasurements(updatedMeasurements);
+                    localStorage.setItem('march20_measurements', JSON.stringify(updatedMeasurements));
+                    setWeight('');
+                    setWaist('');
+                    alert("Measurements Logged. Stay consistent.");
+                }
+            };
+
+            const updateStreak = () => {
+                const todayStr = currentDate.toISOString().split('T')[0];
+                if (lastLogDate !== todayStr) {
+                    const newStreak = streak + 1;
+                    setStreak(newStreak);
+                    setLastLogDate(todayStr);
+                    localStorage.setItem('march20_streak', newStreak);
+                    localStorage.setItem('march20_lastLogDate', todayStr);
+                    alert("Streak Updated! 🔥 Keep the fire burning.");
+                } else {
+                    alert("You already logged your streak for today.");
+                }
+            };
+            
+            const handleManualStreakUpdate = () => {
+                const newVal = parseInt(manualStreakInput);
+                if(!isNaN(newVal)){
+                    setStreak(newVal);
+                    localStorage.setItem('march20_streak', newVal);
+                    setShowStreakEditor(false);
+                    setManualStreakInput('');
+                }
+            };
+
+            // Status Checkers
+            const getCalorieStatus = () => {
+                const cal = parseInt(calories);
+                if (!cal) return null;
+                if (cal < 1500) return { status: 'danger', msg: '❌ STARVATION MODE. EAT MORE.' };
+                if (cal > 2100) return { status: 'warning', msg: '⚠️ SURPLUS TOO HIGH.' };
+                return { status: 'success', msg: '✅ PERFECT RECOMP ZONE.' };
+            };
+
+            const getProteinStatus = () => {
+                const prot = parseInt(protein);
+                if (!prot) return null;
+                if (prot < 90) return { status: 'danger', msg: '❌ LOW PROTEIN.' };
+                if (prot >= 100) return { status: 'success', msg: '✅ ANABOLIC ZONE.' };
+                return { status: 'warning', msg: '⚠️ OKAY, BUT AIM FOR 100g+.' };
+            };
+
+            const calStatus = getCalorieStatus();
+            const protStatus = getProteinStatus();
+
+            return (
+                <div className="min-h-screen p-4 md:p-8">
+                    <div className="max-w-4xl mx-auto space-y-8">
+                        
+                        {/* Header Section */}
+                        <header className="border-b border-gray-800 pb-6">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                                <div>
+                                    <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase">
+                                        The March 20 <span className="text-neonGreen">Protocol</span>
+                                    </h1>
+                                    <p className="text-gray-500 mt-2 flex items-center font-mono text-sm">
+                                        <Icons.Activity className="w-4 h-4 mr-2" />
+                                        STATUS: ACTIVE RECOMPOSITION
+                                    </p>
+                                </div>
+                                
+                                <div className="flex gap-6 w-full md:w-auto justify-between md:justify-end">
+                                    {/* Streak Widget */}
+                                    <div className="text-center cursor-pointer group" onClick={() => setShowStreakEditor(!showStreakEditor)}>
+                                        <div className="flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+                                            <Icons.Flame className={`w-8 h-8 ${lastLogDate === currentDate.toISOString().split('T')[0] ? 'animate-pulse' : ''}`} />
+                                        </div>
+                                        <div className="text-2xl font-bold text-white">{streak}</div>
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest">Day Streak</div>
+                                    </div>
+
+                                    {/* Countdown Widget */}
+                                    <div className="text-right">
+                                        <div className="text-5xl font-bold text-white">{daysLeft}</div>
+                                        <div className="text-xs text-gray-500 uppercase tracking-widest">Days Left</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Manual Streak Editor */}
+                            {showStreakEditor && (
+                                <div className="mt-4 p-4 bg-gray-900 border border-gray-700 rounded flex gap-2 items-center">
+                                    <span className="text-xs text-gray-400">Manual Override:</span>
+                                    <input 
+                                        type="number" 
+                                        value={manualStreakInput}
+                                        onChange={(e) => setManualStreakInput(e.target.value)}
+                                        className="bg-black border border-gray-600 rounded px-2 py-1 text-sm w-20 text-white focus:border-orange-500 outline-none"
+                                        placeholder="Days"
+                                    />
+                                    <button onClick={handleManualStreakUpdate} className="bg-orange-600 hover:bg-orange-500 text-white text-xs px-3 py-1 rounded font-bold uppercase">Update</button>
+                                </div>
+                            )}
+
+                            {/* Progress Bar */}
+                            <div className="mt-6 h-2 bg-gray-900 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-neonGreen transition-all duration-1000"
+                                    style={{ width: `${progressPercent}%` }}
+                                ></div>
+                            </div>
+                        </header>
+
+                        <MeasurementReminder day={dayName} />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            
+                            {/* Fuel Log Section */}
+                            <section className="bg-[#111111] p-6 rounded-xl border border-gray-800">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center">
+                                        <Icons.Utensils className="w-5 h-5 text-blue-500 mr-2" />
+                                        <h2 className="text-xl font-bold text-white font-mono">Daily Fuel Log</h2>
+                                    </div>
+                                    <button 
+                                        onClick={updateStreak}
+                                        className={`text-xs px-3 py-1 rounded border font-bold uppercase transition-colors ${
+                                            lastLogDate === currentDate.toISOString().split('T')[0] 
+                                            ? 'bg-green-900/30 border-green-800 text-green-500 cursor-default' 
+                                            : 'bg-gray-800 border-gray-600 hover:bg-gray-700 text-gray-300'
+                                        }`}
+                                    >
+                                        {lastLogDate === currentDate.toISOString().split('T')[0] ? 'Day Logged ✓' : 'Complete Day'}
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-xs text-gray-500 uppercase mb-2 font-mono">Calories (Target: 1700-1900)</label>
+                                        <input 
+                                            type="number" 
+                                            value={calories}
+                                            onChange={(e) => setCalories(e.target.value)}
+                                            className="w-full bg-black border border-gray-700 rounded p-3 text-white focus:border-neonGreen focus:outline-none transition-colors font-mono"
+                                            placeholder="Enter total kcal..."
+                                        />
+                                        {calStatus && (
+                                            <div className={`mt-3 text-sm font-bold flex items-center font-mono ${
+                                                calStatus.status === 'success' ? 'text-neonGreen' : 
+                                                calStatus.status === 'warning' ? 'text-yellow-500' : 'text-crimsonRed'
+                                            }`}>
+                                                {calStatus.msg}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs text-gray-500 uppercase mb-2 font-mono">Protein (Target: 100g+)</label>
+                                        <input 
+                                            type="number" 
+                                            value={protein}
+                                            onChange={(e) => setProtein(e.target.value)}
+                                            className="w-full bg-black border border-gray-700 rounded p-3 text-white focus:border-neonGreen focus:outline-none transition-colors font-mono"
+                                            placeholder="Enter protein grams..."
+                                        />
+                                        {protStatus && (
+                                            <div className={`mt-3 text-sm font-bold flex items-center font-mono ${
+                                                protStatus.status === 'success' ? 'text-neonGreen' : 
+                                                protStatus.status === 'warning' ? 'text-yellow-500' : 'text-crimsonRed'
+                                            }`}>
+                                                {protStatus.msg}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Workout Section */}
+                            <section className="bg-[#111111] p-6 rounded-xl border border-gray-800">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center">
+                                        <Icons.Dumbbell className="w-5 h-5 text-purple-500 mr-2" />
+                                        <h2 className="text-xl font-bold text-white font-mono">{dayName} Mission</h2>
+                                    </div>
+                                    <span className="text-xs font-bold px-2 py-1 bg-gray-800 rounded text-gray-300 font-mono">
+                                        {todaysWorkout.title}
+                                    </span>
+                                </div>
+
+                                <p className="text-sm text-gray-400 mb-6 italic font-mono">Focus: {todaysWorkout.focus}</p>
+
+                                <div className="space-y-3">
+                                    {todaysWorkout.exercises.map((ex, idx) => (
+                                        <div 
+                                            key={idx}
+                                            onClick={() => handleExerciseToggle(ex.name)}
+                                            className={`p-3 rounded border cursor-pointer transition-all ${
+                                                completedExercises[ex.name] 
+                                                    ? 'bg-green-900/20 border-green-900 opacity-50' 
+                                                    : 'bg-black border-gray-800 hover:border-gray-600'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center">
+                                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center mr-3 ${
+                                                        completedExercises[ex.name] ? 'bg-neonGreen border-neonGreen' : 'border-gray-600'
+                                                    }`}>
+                                                        {completedExercises[ex.name] && <Icons.CheckCircle2 className="w-3 h-3 text-black" />}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-sm text-white font-mono">{ex.name}</div>
+                                                        <div className="text-xs text-gray-500 font-mono">{ex.sets} Sets × {ex.reps} • {ex.weight}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-xs text-gray-600 font-medium hidden sm:block font-mono">
+                                                    {ex.notes}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* Progress Lab */}
+                            <section className="bg-[#111111] p-6 rounded-xl border border-gray-800 md:col-span-2">
+                                <div className="flex items-center mb-6">
+                                    <Icons.History className="w-5 h-5 text-orange-500 mr-2" />
+                                    <h2 className="text-xl font-bold text-white font-mono">Progress Lab</h2>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="space-y-4">
+                                        <input 
+                                            type="number" 
+                                            placeholder="Weight (kg)" 
+                                            value={weight}
+                                            onChange={(e) => setWeight(e.target.value)}
+                                            className="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm font-mono"
+                                        />
+                                        <input 
+                                            type="number" 
+                                            placeholder="Waist (cm)" 
+                                            value={waist}
+                                            onChange={(e) => setWaist(e.target.value)}
+                                            className="w-full bg-black border border-gray-700 rounded p-3 text-white text-sm font-mono"
+                                        />
+                                        <button 
+                                            onClick={saveMeasurement}
+                                            className="w-full bg-white text-black font-bold py-3 rounded hover:bg-gray-200 transition-colors uppercase text-sm tracking-wide font-mono"
+                                        >
+                                            Log Data
+                                        </button>
+                                    </div>
+
+                                    <div className="md:col-span-2 bg-black rounded p-4 border border-gray-800">
+                                        <h3 className="text-xs font-bold text-gray-500 uppercase mb-4 font-mono">Measurement History</h3>
+                                        <div className="space-y-2 max-h-40 overflow-y-auto no-scrollbar">
+                                            {measurements.map((m, i) => (
+                                                <div key={i} className="flex justify-between text-sm py-2 border-b border-gray-900 last:border-0 font-mono">
+                                                    <span className="text-gray-400">{m.date}</span>
+                                                    <span className="text-white">{m.weight} kg</span>
+                                                    <span className="text-white">{m.waist} cm</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="mt-4 pt-4 border-t border-gray-900">
+                                            <p className="text-xs text-gray-500 flex items-center font-mono">
+                                                <Icons.AlertTriangle className="w-3 h-3 mr-1" />
+                                                NOTE: Weight will fluctuate +0.5kg due to glycogen. Trust the waist measurement.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
