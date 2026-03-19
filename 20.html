@@ -1,0 +1,182 @@
+st newLog = { date: dateStr, weight: localWeight, waist: localWaist };
+                const updatedL    = [newLog, ...state.logs]; // Add new log to start of array
+                
+                // Update Logs AND Current Stats
+                updateState('logs', updatedLogs);
+                updateState('weight', localWeight);
+                updateState('waist', localWaist);
+                
+                alert("Entry Saved.");
+            };
+
+            return (
+                <div className="space-y-4 fade-in">
+                    <Card title="Update Metrics">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-[10px] text-gray-500 uppercase mb-1 block">Weight (KG)</label>
+                                <input type="number" value={localWeight} onChange={(e) => setLocalWeight(Number(e.target.value))} className="w-full bg-black border border-gray-700 p-2 text-white font-bold text-lg rounded-sm" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-gray-500 uppercase mb-1 block">Waist (CM)</label>
+                                <input type="number" value={localWaist} onChange={(e) => setLocalWaist(Number(e.target.value))} className="w-full bg-black border border-gray-700 p-2 text-white font-bold text-lg rounded-sm" />
+                            </div>
+                        </div>
+                        <button onClick={saveLog} className="w-full mt-4 bg-white text-black font-bold py-3 uppercase text-xs hover:bg-gray-200 rounded-sm">
+                            Save Entry
+                        </button>
+                    </Card>
+
+                    <Card title="History Log">
+                        {state.logs.length === 0 ? (
+                            <div className="text-center text-gray-600 text-xs py-4">NO DATA RECORDED</div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-xs text-left">
+                                    <thead>
+                                        <tr className="text-gray-500 border-b border-gray-800">
+                                            <th className="pb-2 font-normal">DATE</th>
+                                            <th className="pb-2 font-normal">KG</th>
+                                            <th className="pb-2 font-normal">CM</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-900">
+                                        {state.logs.map((log, i) => (
+                                            <tr key={i}>
+                                                <td className="py-2 text-gray-300 font-mono">{log.date}</td>
+                                                <td className="py-2 text-neon font-bold">{log.weight}</td>
+                                                <td className="py-2 text-gray-300">{log.waist}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </Card>
+
+                    <div className="text-center pt-8 pb-4">
+                        <button onClick={resetAllData} className="text-[10px] text-red-900 hover:text-red-500 flex items-center justify-center gap-2 mx-auto transition-colors">
+                           <Icon name="trash" /> FACTORY RESET DATA
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APPLICATION ---
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState("dashboard");
+            const [storageError, setStorageError] = useState(false);
+            
+            // --- MASTER STATE ---
+            // This initializes ONCE from LocalStorage.
+            const [state, setState] = useState(() => {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) return JSON.parse(saved);
+                } catch (e) {
+                    console.error("Storage load failed", e);
+                    setStorageError(true);
+                }
+                // Default State
+                return {
+                    calories: 1800,
+                    protein: 100,
+                    steps: 8000,
+                    weight: 62.3,
+                    waist: 0,
+                    logs: [],
+                    workoutHistory: {}, // { '2026-02-07': true }
+                    sessionProgress: {} // { '2026-02-07': { 0: true, 1: false } }
+                };
+            });
+
+            // --- SAVE EFFECT ---
+            // Whenever 'state' changes, save it to LocalStorage immediately.
+            useEffect(() => {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                } catch (e) {
+                    setStorageError(true);
+                }
+            }, [state]);
+
+            // Helper to update state cleanly
+            const updateState = (key, value) => {
+                setState(prev => ({ ...prev, [key]: value }));
+            };
+
+            const resetAllData = () => {
+                if(confirm("WARNING: This will delete ALL your logs and progress. Are you sure?")) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    window.location.reload();
+                }
+            };
+
+            // Calculated Constants
+            const today = getTodayDate();
+            const TARGET_DATE = new Date("2026-03-20T00:00:00");
+            const START_DATE = new Date("2026-02-07T00:00:00"); 
+            const now = new Date();
+            const daysRemaining = Math.ceil((TARGET_DATE - now) / (1000 * 60 * 60 * 24));
+            const dayNumber = Math.ceil((now - START_DATE) / (1000 * 60 * 60 * 24));
+
+            return (
+                <div className="flex flex-col h-full max-w-md mx-auto bg-black border-x border-gray-900 shadow-2xl relative">
+                    <div className="scanline"></div>
+                    
+                    {/* HEADER */}
+                    <div className="bg-black border-b border-gray-800 p-4 shrink-0 flex justify-between items-center z-20">
+                        <div>
+                            <h1 className="text-neon font-bold tracking-widest text-sm">MARCH 20 PROTOCOL</h1>
+                            <div className="text-[10px] text-gray-500 flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${storageError ? 'bg-red-500' : 'bg-neon animate-pulse'}`}></div>
+                                {storageError ? "STORAGE ERROR" : `ONLINE // ${today}`}
+                            </div>
+                        </div>
+                        <div className="text-right">
+                             <div className="text-[10px] text-gray-500">USER: 16M / {state.weight}KG</div>
+                             <div className="text-xs font-bold text-white">{state.weight}KG</div>
+                        </div>
+                    </div>
+
+                    {/* ERROR BANNER */}
+                    {storageError && (
+                        <div className="bg-red-900 text-white text-xs p-2 text-center font-bold">
+                            ⚠️ BROWSER STORAGE DISABLED. DATA WILL NOT SAVE.
+                        </div>
+                    )}
+
+                    {/* CONTENT */}
+                    <div className="flex-1 overflow-y-auto p-4 z-10 custom-scrollbar pb-24">
+                        {activeTab === 'dashboard' && <Dashboard state={state} today={today} daysRemaining={daysRemaining} dayNumber={dayNumber} setActiveTab={setActiveTab} />}
+                        {activeTab === 'fuel' && <FuelSection state={state} updateState={updateState} />}
+                        {activeTab === 'train' && <WorkoutSection state={state} updateState={updateState} today={today} />}
+                        {activeTab === 'log' && <CalendarSection state={state} />}
+                        {activeTab === 'data' && <DataSection state={state} updateState={updateState} resetAllData={resetAllData} />}
+                    </div>
+
+                    {/* FOOTER NAV */}
+                    <div className="shrink-0 bg-black border-t border-gray-800 p-1 grid grid-cols-5 gap-1 z-30 fixed bottom-0 w-full max-w-md">
+                        <NavBtn id="dashboard" label="HUB" icon="home" active={activeTab} set={setActiveTab} />
+                        <NavBtn id="fuel" label="FUEL" icon="fuel" active={activeTab} set={setActiveTab} />
+                        <NavBtn id="train" label="TRAIN" icon="train" active={activeTab} set={setActiveTab} />
+                        <NavBtn id="log" label="LOG" icon="log" active={activeTab} set={setActiveTab} />
+                        <NavBtn id="data" label="DATA" icon="data" active={activeTab} set={setActiveTab} />
+                    </div>
+                </div>
+            );
+        };
+
+        const NavBtn = ({ id, label, icon, active, set }) => (
+            <button 
+                onClick=setActiveTabd)} 
+                className={`flex flex-col items-center justify-center p-3 rounded-sm transition-colors ${active === id ? 'text-neon bg-gray-900' : 'text-gray-600 hover:text-gray-300'}`}
+            >
+                <Icon name={icon} />
+                <span className="text-[9px] mt-1 font-bold">{label}</span>
+            </button>
+        );
+
+        const transition-color
